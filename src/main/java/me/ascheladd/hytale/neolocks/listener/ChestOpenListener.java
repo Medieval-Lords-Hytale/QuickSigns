@@ -98,6 +98,96 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
             System.out.println("  - Target Entity: " + context.getTargetEntity());
             System.out.println("  - Held Item: " + context.getHeldItem());
             System.out.println("  - Original Item Type: " + context.getOriginalItemType());
+            
+            // MetaStore exploration - this is where interaction-specific data lives
+            var metaStore = context.getMetaStore();
+            if (metaStore != null) {
+                System.out.println("  - MetaStore available: true");
+                // Try to access known meta keys from Interaction class
+                try {
+                    var targetEntityMeta = metaStore.getIfPresentMetaObject(
+                        com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction.TARGET_ENTITY
+                    );
+                    System.out.println("    - TARGET_ENTITY meta: " + targetEntityMeta);
+                } catch (Exception e) {
+                    System.out.println("    - TARGET_ENTITY meta: error - " + e.getMessage());
+                }
+                
+                try {
+                    var targetBlockMeta = metaStore.getIfPresentMetaObject(
+                        com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction.TARGET_BLOCK
+                    );
+                    System.out.println("    - TARGET_BLOCK meta: " + targetBlockMeta);
+                } catch (Exception e) {
+                    System.out.println("    - TARGET_BLOCK meta: error - " + e.getMessage());
+                }
+            }
+            
+            // CommandBuffer exploration - access to world state
+            var ctxCommandBuffer = context.getCommandBuffer();
+            if (ctxCommandBuffer != null) {
+                System.out.println("  - CommandBuffer available: true");
+                
+                // Try to get block state at the target position
+                if (targetBlock != null) {
+                    try {
+                        // Access the world through the command buffer
+                        var entityRef = context.getEntity();
+                        if (entityRef != null) {
+                            var world = entityRef.getStore().getExternalData().getWorld();
+                            if (world != null) {
+                                System.out.println("    - World: " + world.getName());
+                                
+                                // Try to get the chunk at this position
+                                int chunkX = targetBlock.x >> 4;
+                                int chunkZ = targetBlock.z >> 4;
+                                long chunkIndex = com.hypixel.hytale.math.util.ChunkUtil.indexChunk(chunkX, chunkZ);
+                                var chunk = world.getChunk(chunkIndex);
+                                if (chunk != null) {
+                                    System.out.println("    - Chunk found at block position");
+                                    
+                                    // Try to get block state
+                                    var blockState = chunk.getState(
+                                        targetBlock.x & 15,
+                                        targetBlock.y,
+                                        targetBlock.z & 15
+                                    );
+                                    
+                                    if (blockState != null) {
+                                        System.out.println("    - BlockState found!");
+                                        System.out.println("      - BlockState class: " + blockState.getClass().getName());
+                                        System.out.println("      - BlockState position: " + blockState.getPosition());
+                                        
+                                        // Check if it's an ItemContainerBlockState (for chests)
+                                        if (blockState instanceof com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState) {
+                                            var containerState = (com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState) blockState;
+                                            System.out.println("      - IS A CONTAINER! ItemContainer: " + containerState.getItemContainer());
+                                            var container = containerState.getItemContainer();
+                                            if (container != null) {
+                                                System.out.println("        - Container class: " + container.getClass().getName());
+                                                System.out.println("        - Container toString: " + container);
+                                            }
+                                        }
+                                        
+                                        // Get the block type from the state
+                                        var stateBlockType = blockState.getBlockType();
+                                        if (stateBlockType != null) {
+                                            System.out.println("      - BlockType from state: " + stateBlockType.getId());
+                                        }
+                                    } else {
+                                        System.out.println("    - No BlockState at position");
+                                    }
+                                } else {
+                                    System.out.println("    - Chunk not loaded");
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("    - Error accessing world/chunk: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
         
         System.out.println("=== End Debug Info ===\n");
