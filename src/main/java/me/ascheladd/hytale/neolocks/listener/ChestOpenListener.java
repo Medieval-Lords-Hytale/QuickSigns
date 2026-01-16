@@ -54,6 +54,7 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         // BlockType information
         BlockType blockType = ev.getBlockType();
         var targetBlock = ev.getTargetBlock();
+        
         Ref<EntityStore> entityRef = ev.getContext().getEntity();
         
         // Check if this is a chest interaction
