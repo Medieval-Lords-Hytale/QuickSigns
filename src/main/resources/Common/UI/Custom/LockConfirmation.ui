@@ -1,0 +1,50 @@
+Group {
+    LayoutMode: Center;
+
+    Group #MyPanel {
+        LayoutMode: Top;
+        Anchor: (Width: 500, Height: 300);
+        Padding: (Full: 30);
+        Background: (Color: #F22A2A2E);
+
+        Label #Title {
+            Text: "Lock Chest?";
+            Style: (FontSize: 28, Alignment: Center);
+            Padding: (Bottom: 15);
+        }
+
+        Label #Description {
+            Text: "";
+            Style: (FontSize: 16, Alignment: Center);
+            Padding: (Bottom: 25);
+        }
+
+        Group {
+            LayoutMode: Left;
+            Anchor: (Height: 50);
+            Padding: (Top: 10);
+
+            Button #ConfirmButton {
+                Anchor: (Width: 200, Height: 45);
+                Padding: (Left: 10, Right: 5);
+                Background: (Color: #E62E7D32);
+                
+                Label {
+                    Text: "✓ Confirm Lock";
+                    Style: (FontSize: 18, Alignment: Center);
+                }
+            }
+
+            Button #CancelButton {
+                Anchor: (Width: 200, Height: 45);
+                Padding: (Left: 5, Right: 10);
+                Background: (Color: #E6C62828);
+                
+                Label {
+                    Text: "✗ Cancel";
+                    Style: (FontSize: 18, Alignment: Center);
+                }
+            }
+        }
+    }
+}

@@ -8,7 +8,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import me.ascheladd.hytale.neolocks.listener.ChestOpenListener;
-import me.ascheladd.hytale.neolocks.listener.SignPlacementListener;
+import me.ascheladd.hytale.neolocks.listener.SignPlaceListener;
 import me.ascheladd.hytale.neolocks.storage.ChestLockStorage;
 
 /**
@@ -35,7 +35,7 @@ public final class NeoLocks extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new ChestOpenListener(storage));
         
         // Initialize and register sign placement listener
-        this.getEntityStoreRegistry().registerSystem(new SignPlacementListener(storage));
+        this.getEntityStoreRegistry().registerSystem(new SignPlaceListener(storage));
         
         getLogger().atInfo().log("Enabled! Loaded " + storage.getLockedChestCount() + " locked chests.");
     }

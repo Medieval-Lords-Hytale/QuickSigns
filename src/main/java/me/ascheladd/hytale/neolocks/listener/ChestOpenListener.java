@@ -10,6 +10,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -49,70 +50,21 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         @Nonnull CommandBuffer<EntityStore> commandBuffer,
         @Nonnull UseBlockEvent.Pre ev
     ) {
-        System.out.println("=== UseBlockEvent.Pre Debug Info ===");
-        
-        // Event-level information
-        System.out.println("InteractionType: " + ev.getInteractionType());
-        System.out.println("Is Cancelled: " + ev.isCancelled());
-        
-        // Target block information
-        var targetBlock = ev.getTargetBlock();
-        System.out.println("Target Block Position: " + targetBlock);
         
         // BlockType information
-        var blockType = ev.getBlockType();
-        System.out.println("BlockType: " + blockType);
-        if (blockType != null) {
-            System.out.println("  - Block ID: " + blockType.getId());
-            System.out.println("  - Block Group: " + blockType.getGroup());
-            System.out.println("  - Is State: " + blockType.isState());
-            System.out.println("  - Is Unknown: " + blockType.isUnknown());
-            System.out.println("  - Interaction Hitbox Type: " + blockType.getInteractionHitboxType());
-            System.out.println("  - Interactions: " + blockType.getInteractions());
-            System.out.println("  - Flags: " + blockType.getFlags());
-            System.out.println("  - Is Trigger: " + blockType.isTrigger());
-            
-            var blockEntity = blockType.getBlockEntity();
-            if (blockEntity != null) {
-                System.out.println("  - Has Block Entity: true");
-                var archetype = blockEntity.getArchetype();
-                if (archetype != null) {
-                    System.out.println("    - Component Count: " + archetype.count());
-                }
-            } else {
-                System.out.println("  - Has Block Entity: false");
-            }
-            
-            var data = blockType.getData();
-            if (data != null) {
-                var tags = data.getRawTags();
-                System.out.println("  - Tags: " + (tags != null ? tags.keySet() : "null"));
-            }
-        }
-        
-        // Context information
-        var context = ev.getContext();
-        if (context != null) {
-            System.out.println("Context Info:");
-            System.out.println("  - Target Block (from context): " + context.getTargetBlock());
-            System.out.println("  - Target Entity: " + context.getTargetEntity());
-            System.out.println("  - Held Item: " + context.getHeldItem());
-            System.out.println("  - Original Item Type: " + context.getOriginalItemType());
-        }
-        
-        System.out.println("=== End Debug Info ===\n");
-        
+        BlockType blockType = ev.getBlockType();
+        var targetBlock = ev.getTargetBlock();
         Ref<EntityStore> entityRef = ev.getContext().getEntity();
         
         // Check if this is a chest interaction
-        if (!ChestUtil.isChest(ev.getBlockType())) {
-            System.out.println("Fail 1");
+        if (!ChestUtil.isChest(blockType)) {
+            System.out.println("Not chest");
             return; // Not a chest, ignore
         }
         
         // Only handle chest opening (Use interaction)
         if (ev.getInteractionType() != InteractionType.Use) {
-            System.out.println("Fail 2");
+            System.out.println("Not use interaction");
             return;
         }
         
@@ -126,7 +78,7 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         Player player = entityRef.getStore().getComponent(entityRef, Player.getComponentType());
         PlayerRef playerRef = entityRef.getStore().getComponent(entityRef, PlayerRef.getComponentType());
         if (player == null) {
-            System.out.println("Fail 31");
+            System.out.println("Not a player interaction");
             return; // Not a valid player interaction
         }
         
@@ -137,7 +89,7 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
      * Handles when a player tries to open a chest.
      */
     private void handleChestOpen(
-        UseBlockEvent.Pre event,
+        UseBlockEvent.Pre ev,
         PlayerRef playerRef,
         Player player,
         String worldId,
@@ -146,7 +98,7 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         int z
     ) {
         // Get entity ref from event context
-        Ref<EntityStore> entityRef = event.getContext().getEntity();
+        Ref<EntityStore> entityRef = ev.getContext().getEntity();
         
         // Get all positions for this chest (handles double chests)
         ChestPosition[] chestPositions = ChestUtil.getChestPositions(entityRef, x, y, z);
@@ -181,7 +133,7 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         }
         
         // Cancel the chest opening
-        event.setCancelled(true);
+        ev.setCancelled(true);
         System.out.println("Locked 1");
         
         // Show locked chest UI

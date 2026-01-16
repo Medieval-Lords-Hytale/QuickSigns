@@ -1,0 +1,25 @@
+Group {
+    LayoutMode: Center;
+
+    Group #MyPanel {
+        LayoutMode: Top;
+        Anchor: (Width: 400, Height: 200);
+        Padding: (Full: 30);
+
+        Label #MyLabel {
+            Text: "NeoLocks Test UI";
+            Style: (FontSize: 24, Alignment: Center);
+            Padding: (Bottom: 20);
+        }
+
+        Button #MyButton {
+            Anchor: (Height: 40);
+            Padding: (Full: 10);
+            
+            Label {
+                Text: "Test Button";
+                Style: (Alignment: Center);
+            }
+        }
+    }
+}

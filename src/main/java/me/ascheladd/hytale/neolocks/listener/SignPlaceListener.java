@@ -25,13 +25,13 @@ import me.ascheladd.hytale.neolocks.util.ChestUtil.ChestPosition;
 /**
  * Handles sign placement on chests for locking/unlocking.
  */
-public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
+public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
     
     private static final String PERMISSION_LOCK = "neolocks.lock";
     
     private final ChestLockStorage storage;
     
-    public SignPlacementListener(ChestLockStorage storage) {
+    public SignPlaceListener(ChestLockStorage storage) {
         super(PlaceBlockEvent.class);
         this.storage = storage;
     }
@@ -51,6 +51,7 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
     ) {
         // Check if placing a sign
         if (!isSign(ev.getItemInHand())) {
+            System.out.println("Not a sign");
             return;
         }
         
@@ -61,7 +62,8 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
         Player player = store.getComponent(entityRef, Player.getComponentType());
         PlayerRef playerRef = store.getComponent(entityRef, PlayerRef.getComponentType());
         if (player == null) {
-            return; // Not a valid player interaction
+            System.out.println("No permissions");
+            return;
         }
         
         // Check if player has permission to lock chests
@@ -69,19 +71,20 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
             player.sendMessage(Message.raw("You don't have permission to lock chests.").color("#FF0000"));
             return;
         }
-        
         var targetBlock = ev.getTargetBlock();
-        int x = targetBlock.x;
-        int y = targetBlock.y;
-        int z = targetBlock.z;
+        int signX = targetBlock.x;
+        int signY = targetBlock.y;
+        int signZ = targetBlock.z;
         
         String worldId = store.getExternalData().getWorld().getName();
         
-        // Get all positions for the chest at this location (handles double chests)
-        ChestPosition[] chestPositions = ChestUtil.getChestPositions(entityRef, x, y, z);
+        // The targetBlock is where the sign will be placed, not the chest
+        // We need to check adjacent blocks to find the chest
+        ChestPosition[] chestPositions = findAdjacentChest(entityRef, signX, signY, signZ);
         
         if (chestPositions.length == 0) {
-            return; // No chest at this location
+            System.out.println("No adjacent chest found for sign placement");
+            return; // No chest adjacent to this sign
         }
         
         // Check if any part of the chest is already locked
@@ -111,6 +114,12 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
         // Cancel the sign placement event
         ev.setCancelled(true);
         
+        // Use the first chest position as the primary position
+        int chestX = chestPositions[0].x;
+        int chestY = chestPositions[0].y;
+        int chestZ = chestPositions[0].z;
+        System.out.println("Trying to lock a chest at " + chestX + "," + chestY + "," + chestZ);
+        
         // Convert ChestPosition[] to LockConfirmationPage.ChestPosition[]
         LockConfirmationPage.ChestPosition[] uiChestPositions = 
             new LockConfirmationPage.ChestPosition[chestPositions.length];
@@ -129,9 +138,9 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
             playerRef.getUuid(),
             playerRef.getUsername(),
             worldId,
-            x,
-            y,
-            z,
+            chestX,
+            chestY,
+            chestZ,
             uiChestPositions
         );
         
@@ -143,6 +152,41 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
     }
     
     /**
+     * Finds a chest adjacent to the sign placement position.
+     * Checks all 6 cardinal directions (up, down, north, south, east, west).
+     * 
+     * @param entityRef The entity reference
+     * @param signX Sign X position
+     * @param signY Sign Y position
+     * @param signZ Sign Z position
+     * @return Array of chest positions if found, empty array otherwise
+     */
+    private ChestPosition[] findAdjacentChest(Ref<EntityStore> entityRef, int signX, int signY, int signZ) {
+        // Check all 6 cardinal directions
+        int[][] directions = {
+            {0, 1, 0},   // Up
+            {0, -1, 0},  // Down
+            {1, 0, 0},   // East (+X)
+            {-1, 0, 0},  // West (-X)
+            {0, 0, 1},   // South (+Z)
+            {0, 0, -1}   // North (-Z)
+        };
+        
+        for (int[] dir : directions) {
+            int chestX = signX + dir[0];
+            int chestY = signY + dir[1];
+            int chestZ = signZ + dir[2];
+            
+            ChestPosition[] positions = ChestUtil.getChestPositions(entityRef, chestX, chestY, chestZ);
+            if (positions.length > 0) {
+                return positions; // Found a chest
+            }
+        }
+        
+        return new ChestPosition[0]; // No chest found
+    }
+    
+    /**
      * Checks if an ItemStack will place a sign block.
      */
     private boolean isSign(ItemStack itemStack) {
@@ -151,10 +195,10 @@ public class SignPlacementListener extends EntityEventSystem<EntityStore, PlaceB
         }
         
         String blockKey = itemStack.getBlockKey();
-        return blockKey != null && (
-            blockKey.equals("sign") ||
-            blockKey.contains("sign") ||
-            blockKey.equals("hytale:sign")
-        );
+        if (blockKey == null) {
+            return false;
+        }
+        System.out.println("Block key: " + blockKey + " " + blockKey.contains("Sign"));
+        return blockKey.equals("Sign") || blockKey.contains("Sign");
     }
 }

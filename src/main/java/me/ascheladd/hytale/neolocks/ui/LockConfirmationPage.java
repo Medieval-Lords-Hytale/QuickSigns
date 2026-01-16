@@ -4,11 +4,15 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
+import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -22,7 +26,23 @@ import me.ascheladd.hytale.neolocks.storage.ChestLockStorage;
  * Allows the player to confirm or cancel locking the chest.
  * Handles both single and double chests.
  */
-public class LockConfirmationPage extends CustomUIPage {
+public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmationPage.Data> {
+    
+    // Data class for handling button clicks
+    public static class Data {
+        public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
+            .append(new KeyedCodec<>("ButtonAction", Codec.STRING), 
+                (data, value) -> data.action = value, 
+                data -> data.action)
+            .add()
+            .build();
+        
+        private String action; // "confirm" or "cancel"
+        
+        public String getAction() {
+            return action;
+        }
+    }
     
     // Inner class to hold chest position data
     public static class ChestPosition {
@@ -57,7 +77,7 @@ public class LockConfirmationPage extends CustomUIPage {
         int chestZ,
         ChestPosition[] chestPositions
     ) {
-        super(playerRef, CustomPageLifetime.CanDismiss);
+        super(playerRef, CustomPageLifetime.CanDismiss, Data.CODEC);
         this.storage = storage;
         this.playerId = playerId;
         this.playerName = playerName;
@@ -92,72 +112,48 @@ public class LockConfirmationPage extends CustomUIPage {
         @Nonnull UIEventBuilder events,
         @Nonnull Store<EntityStore> store
     ) {
-        // Clear existing UI
-        ui.clear("root");
+        // Load the UI file
+        ui.append("LockConfirmation.ui");
         
-        // Create main container
-        ui.append("root", "main-container");
-        
-        // Title
-        ui.append("main-container", "title-text");
-        ui.set("title-text.text", "Lock Chest?");
-        
-        // Description
-        ui.append("main-container", "description-text");
+        // Set the description text
         String chestType = chestPositions.length > 1 ? "double chest" : "chest";
-        ui.set("description-text.text", "Do you want to lock this " + chestType + "?\n" +
+        String description = "Do you want to lock this " + chestType + "?\n" +
             "Location: " + chestX + ", " + chestY + ", " + chestZ + "\n" +
             (chestPositions.length > 1 ? "(" + chestPositions.length + " blocks)\n" : "") +
-            "\nOnly you will be able to open it.");
+            "\nOnly you will be able to open it.";
         
-        // Button container
-        ui.append("main-container", "button-container");
-        
-        // Confirm button
-        ui.append("button-container", "confirm-button");
-        ui.set("confirm-button.text", "Confirm Lock");
-        ui.set("confirm-button.type", "button");
-        
-        // Cancel button
-        ui.append("button-container", "cancel-button");
-        ui.set("cancel-button.text", "Cancel");
-        ui.set("cancel-button.type", "button");
+        ui.set("#Description.Text", description);
         
         // Register button click events
-        events.addEventBinding(CustomUIEventBindingType.Activating, "confirm-button");
-        events.addEventBinding(CustomUIEventBindingType.Activating, "cancel-button");
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#ConfirmButton", 
+            EventData.of("ButtonAction", "confirm"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#CancelButton", 
+            EventData.of("ButtonAction", "cancel"), false);
     }
     
     @Override
     public void handleDataEvent(
         @Nonnull Ref<EntityStore> playerEntity,
         @Nonnull Store<EntityStore> store,
-        String eventId
+        Data data
     ) {
-        switch (eventId) {
-            case "confirm-clicked":
-                // Lock all parts of the chest (handles double chests)
-                for (ChestPosition pos : chestPositions) {
-                    LockedChest chest = new LockedChest(
-                        playerId,
-                        playerName,
-                        worldId,
-                        pos.x,
-                        pos.y,
-                        pos.z
-                    );
-                    storage.lockChest(chest);
-                }
-                
-                // Close the page
-                close();
-                break;
-                
-            case "cancel-clicked":
-                // Just close the page
-                close();
-                break;
+        if ("confirm".equals(data.getAction())) {
+            // Lock all parts of the chest (handles double chests)
+            for (ChestPosition pos : chestPositions) {
+                LockedChest chest = new LockedChest(
+                    playerId,
+                    playerName,
+                    worldId,
+                    pos.x,
+                    pos.y,
+                    pos.z
+                );
+                storage.lockChest(chest);
+            }
         }
+        
+        // Close the page (for both confirm and cancel)
+        close();
     }
     
     @Override

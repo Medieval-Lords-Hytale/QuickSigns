@@ -16,18 +16,11 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import me.ascheladd.hytale.neolocks.model.LockedChest;
-
-/**
- * UI page shown when a player tries to open a locked chest they don't own.
- * Displays information about the chest being locked and who owns it.
- */
-public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Data> {
+public class TestPage extends InteractiveCustomUIPage<TestPage.Data> {
     
-    // Data class for handling button clicks
     public static class Data {
         public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
-            .append(new KeyedCodec<>("CloseAction", Codec.STRING), 
+            .append(new KeyedCodec<>("ButtonAction", Codec.STRING), 
                 (data, value) -> data.action = value, 
                 data -> data.action)
             .add()
@@ -40,11 +33,8 @@ public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Dat
         }
     }
     
-    private final LockedChest lockedChest;
-    
-    public LockedChestPage(@Nonnull PlayerRef playerRef, LockedChest lockedChest) {
-        super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, Data.CODEC);
-        this.lockedChest = lockedChest;
+    public TestPage(@Nonnull PlayerRef playerRef) {
+        super(playerRef, CustomPageLifetime.CanDismiss, Data.CODEC);
     }
     
     @Override
@@ -54,23 +44,12 @@ public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Dat
         @Nonnull UIEventBuilder events,
         @Nonnull Store<EntityStore> store
     ) {
-        // Load the UI file
-        ui.append("LockedChest.ui");
+        ui.append("TestPage.ui");
         
-        // Set owner name
-        String ownerName = lockedChest.getOwnerName();
-        ui.set("#OwnerName.Text", ownerName != null ? ownerName : "Unknown");
+        ui.set("#MyLabel.Text", "Hello from NeoLocks!");
         
-        // Set location
-        String location = "Location: " + 
-            lockedChest.getX() + ", " + 
-            lockedChest.getY() + ", " + 
-            lockedChest.getZ();
-        ui.set("#Location.Text", location);
-        
-        // Register button click event
-        events.addEventBinding(CustomUIEventBindingType.Activating, "#CloseButton", 
-            EventData.of("CloseAction", "close"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#MyButton", 
+            EventData.of("ButtonAction", "click"), false);
     }
     
     @Override
@@ -79,12 +58,14 @@ public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Dat
         @Nonnull Store<EntityStore> store,
         Data data
     ) {
-        // Close the page
-        close();
+        if ("click".equals(data.getAction())) {
+            // Button was clicked - just close for now
+            close();
+        }
     }
     
     @Override
     public void onDismiss(@Nonnull Ref<EntityStore> playerEntity, @Nonnull Store<EntityStore> store) {
-        // Cleanup when page closes
+        // Cleanup
     }
 }

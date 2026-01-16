@@ -12,96 +12,23 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public class ChestUtil {
     
     /**
-     * Checks if a BlockType is a chest by looking at its block entity, tags, and interactions.
-     * A chest is identified by having ItemContainerState components, container tags, or OpenContainer interactions.
+     * Checks if a BlockType is a chest by checking its state data.
+     * A chest is identified by having a StateData with id='container'.
      * 
      * @param blockType The block type to check
-     * @return true if the block is a chest, false otherwise
+     * @return true if the block is a chest/container, false otherwise
      */
-    public static boolean isChest(BlockType blockType) {
-        if (blockType == null) {
-            return false;
-        }
-        
-        // ECS Method 1: Check if block entity archetype contains ItemContainerState by component type class
-        var blockEntity = blockType.getBlockEntity();
-        if (blockEntity != null) {
-            var archetype = blockEntity.getArchetype();
-            if (archetype != null) {
-                // Method 1a: Check component types by iterating and checking class type
-                System.out.println("Component type: " + archetype);
-                
-                // ECS Method 2: Check archetype length/count (containers have more components)
-                int componentCount = archetype.count();
-                if (componentCount > 0) {
-                    System.out.println("DEBUG: Block has " + componentCount + " components in archetype");
-                }
-            }
-        }
-        
-        // Tag Method: Check asset tags (block categorization system like "darkwood logs")
-        var data = blockType.getData();
-        if (data != null) {
-            var rawTags = data.getRawTags();
-            if (rawTags != null && !rawTags.isEmpty()) {
-                System.out.println("DEBUG: Block has tags: " + rawTags.keySet());
-                
-                // Check if the block has container-related tags
-                for (var tagEntry : rawTags.entrySet()) {
-                    String tagKey = tagEntry.getKey();
-                    if (tagKey != null) {
-                        String normalizedTag = tagKey.toLowerCase();
-                        if (normalizedTag.contains("container") || 
-                            normalizedTag.contains("chest") ||
-                            normalizedTag.contains("storage")) {
-                            System.out.println("✓ Tag Method: Found via tag key: " + tagKey);
-                            return true;
-                        }
-                    }
-                    
-                    // Also check tag values
-                    String[] tagValues = tagEntry.getValue();
-                    if (tagValues != null) {
-                        for (String tagValue : tagValues) {
-                            if (tagValue != null) {
-                                String normalizedValue = tagValue.toLowerCase();
-                                if (normalizedValue.contains("container") || 
-                                    normalizedValue.contains("chest") ||
-                                    normalizedValue.contains("storage")) {
-                                    System.out.println("✓ Tag Method: Found via tag value: " + tagValue);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Interaction Method: Check if the block has an OpenContainer interaction
-        var interactions = blockType.getInteractions();
-        if (interactions != null && !interactions.isEmpty()) {
-            System.out.println("DEBUG: Block has interactions: " + interactions.values());
-            for (String interactionClass : interactions.values()) {
-                if (interactionClass != null && interactionClass.contains("OpenContainer")) {
-                    System.out.println("✓ Interaction Method: Found via OpenContainer interaction");
-                    return true;
-                }
-            }
-        }
-        
-        // Fallback: Check if the block ID contains "chest"
-        String blockId = blockType.getId();
-        if (blockId != null) {
-            System.out.println("DEBUG: Block ID: " + blockId);
-            String normalizedId = blockId.replaceFirst("^\\*+", "").toLowerCase();
-            if (normalizedId.contains("chest")) {
-                System.out.println("✓ Fallback Method: Found via block ID contains 'chest'");
+    public static boolean isChest(BlockType blockType) {        
+        // Primary Method: Check if the block has container state data
+        var state = blockType.getState();
+        if (state != null) {
+            System.out.println(state);
+            String stateId = state.getId();
+            System.out.println("State id" + stateId);
+            if (stateId != null && stateId.contains("container")) {
                 return true;
             }
         }
-        
-        System.out.println("✗ NOT A CHEST: No detection method matched");
         return false;
     }
     
@@ -123,6 +50,7 @@ public class ChestUtil {
     public static ChestPosition[] getChestPositions(Ref<EntityStore> entityRef, int x, int y, int z) {
         try {
             if (entityRef == null || !entityRef.isValid()) {
+                System.out.println("Entity ref not valid");
                 return new ChestPosition[0];
             }
             
@@ -137,24 +65,28 @@ public class ChestUtil {
             // Get the chunk (should be loaded already since player is interacting with it)
             var chunk = world.getChunkIfLoaded(chunkIndex);
             if (chunk == null) {
+                System.out.println("Chunk not loaded");
                 return new ChestPosition[0];
             }
             
             // Get the current block type to verify it's a chest
             var blockType = chunk.getBlockType(x, y, z);
             if (!isChest(blockType)) {
+                System.out.println("Block is not a chest (ChestPosition) " + blockType + " at " + x + "," + y + "," + z);
                 return new ChestPosition[0];
             }
             
             // Get the rotation of the current chest via BlockState
             var currentState = chunk.getState(x, y, z);
             if (currentState == null) {
+                System.out.println("Current state is null");
                 return new ChestPosition[] { new ChestPosition(x, y, z) };
             }
             
             int currentRotationIndex = currentState.getRotationIndex();
             var currentRotation = RotationTuple.get(currentRotationIndex);
             if (currentRotation == null) {
+                System.out.println("Current rotation is null");
                 return new ChestPosition[] { new ChestPosition(x, y, z) };
             }
             

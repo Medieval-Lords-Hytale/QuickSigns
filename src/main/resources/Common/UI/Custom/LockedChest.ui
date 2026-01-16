@@ -1,0 +1,45 @@
+Group {
+    LayoutMode: Center;
+
+    Group #MyPanel {
+        LayoutMode: Top;
+        Anchor: (Width: 450, Height: 320);
+        Padding: (Full: 30);
+        Background: (Color: #F22A2A2E);
+
+        Label #Title {
+            Text: "🔒 Chest Locked!";
+            Style: (FontSize: 26, Alignment: Center);
+            Padding: (Bottom: 20);
+        }
+
+        Label #OwnerLabel {
+            Text: "This chest is locked by:";
+            Style: (FontSize: 16, Alignment: Center);
+            Padding: (Bottom: 8);
+        }
+
+        Label #OwnerName {
+            Text: "";
+            Style: (FontSize: 20, Alignment: Center);
+            Padding: (Bottom: 15);
+        }
+
+        Label #Location {
+            Text: "";
+            Style: (FontSize: 14, Alignment: Center);
+            Padding: (Bottom: 25);
+        }
+
+        Button #CloseButton {
+            Anchor: (Width: 150, Height: 40);
+            Padding: (Full: 10);
+            Background: (Color: #E6424242);
+            
+            Label {
+                Text: "Close";
+                Style: (FontSize: 16, Alignment: Center);
+            }
+        }
+    }
+}
