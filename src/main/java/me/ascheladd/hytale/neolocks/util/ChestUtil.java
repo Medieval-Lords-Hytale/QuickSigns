@@ -22,9 +22,7 @@ public class ChestUtil {
         // Primary Method: Check if the block has container state data
         var state = blockType.getState();
         if (state != null) {
-            System.out.println(state);
             String stateId = state.getId();
-            System.out.println("State id" + stateId);
             if (stateId != null && stateId.contains("container")) {
                 return true;
             }
@@ -50,7 +48,6 @@ public class ChestUtil {
     public static ChestPosition[] getChestPositions(Ref<EntityStore> entityRef, int x, int y, int z) {
         try {
             if (entityRef == null || !entityRef.isValid()) {
-                System.out.println("Entity ref not valid");
                 return new ChestPosition[0];
             }
             
@@ -65,28 +62,24 @@ public class ChestUtil {
             // Get the chunk (should be loaded already since player is interacting with it)
             var chunk = world.getChunkIfLoaded(chunkIndex);
             if (chunk == null) {
-                System.out.println("Chunk not loaded");
                 return new ChestPosition[0];
             }
             
             // Get the current block type to verify it's a chest
             var blockType = chunk.getBlockType(x, y, z);
             if (!isChest(blockType)) {
-                System.out.println("Block is not a chest (ChestPosition) " + blockType + " at " + x + "," + y + "," + z);
                 return new ChestPosition[0];
             }
             
             // Get the rotation of the current chest via BlockState
             var currentState = chunk.getState(x, y, z);
             if (currentState == null) {
-                System.out.println("Current state is null");
                 return new ChestPosition[] { new ChestPosition(x, y, z) };
             }
             
             int currentRotationIndex = currentState.getRotationIndex();
             var currentRotation = RotationTuple.get(currentRotationIndex);
             if (currentRotation == null) {
-                System.out.println("Current rotation is null");
                 return new ChestPosition[] { new ChestPosition(x, y, z) };
             }
             

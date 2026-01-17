@@ -169,9 +169,11 @@ public class ChestLockStorage {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(storageFile.toFile()))) {
             writer.write("# NeoLocks - Locked Chests Storage");
             writer.newLine();
-            writer.write("# Format: ownerId|ownerName|worldId|positions");
+            writer.write("# Format: ownerId|ownerName|worldId|hologramNetworkId|positions");
             writer.newLine();
             writer.write("# positions = x,y,z;x,y,z (semicolon-separated for multi-block chests)");
+            writer.newLine();
+            writer.write("# hologramNetworkId = network ID of hologram entity (or empty if none)");
             writer.newLine();
             writer.newLine();
             
@@ -187,20 +189,36 @@ public class ChestLockStorage {
     
     /**
      * Parses a line from the storage file into a LockedChest.
-     * Format: ownerId|ownerName|worldId|x,y,z;x,y,z
+     * Format: ownerId|ownerName|worldId|hologramNetworkId|x,y,z;x,y,z
+     * Legacy format (v1): ownerId|ownerName|worldId|x,y,z;x,y,z
      */
     private LockedChest parseLine(String line) {
         String[] parts = line.split("\\|");
-        if (parts.length != 4) {
-            throw new IllegalArgumentException("Invalid format, expected 4 parts but got " + parts.length);
+        if (parts.length != 4 && parts.length != 5) {
+            throw new IllegalArgumentException("Invalid format, expected 4 or 5 parts but got " + parts.length);
         }
         
         UUID ownerId = UUID.fromString(parts[0]);
         String ownerName = parts[1];
         String worldId = parts[2];
         
+        // Check if this is the new format with hologram ID
+        Long hologramNetworkId = null;
+        String positionsData;
+        
+        if (parts.length == 5) {
+            // New format: has hologram ID
+            if (!parts[3].isEmpty() && !parts[3].equals("null")) {
+                hologramNetworkId = Long.parseLong(parts[3]);
+            }
+            positionsData = parts[4];
+        } else {
+            // Legacy format: no hologram ID
+            positionsData = parts[3];
+        }
+        
         // Parse positions (semicolon-separated)
-        String[] positionsStr = parts[3].split(";");
+        String[] positionsStr = positionsData.split(";");
         Set<BlockPosition> positions = new HashSet<>();
         
         for (String posStr : positionsStr) {
@@ -214,12 +232,14 @@ public class ChestLockStorage {
             positions.add(new BlockPosition(x, y, z));
         }
         
-        return new LockedChest(ownerId, ownerName, worldId, positions);
+        LockedChest chest = new LockedChest(ownerId, ownerName, worldId, positions);
+        chest.setHologramNetworkId(hologramNetworkId);
+        return chest;
     }
     
     /**
      * Formats a LockedChest into a line for the storage file.
-     * Format: ownerId|ownerName|worldId|x,y,z;x,y,z
+     * Format: ownerId|ownerName|worldId|hologramNetworkId|x,y,z;x,y,z
      */
     private String formatLine(LockedChest chest) {
         StringBuilder positions = new StringBuilder();
@@ -236,9 +256,13 @@ public class ChestLockStorage {
             first = false;
         }
         
+        String hologramId = chest.getHologramNetworkId() != null ? 
+            chest.getHologramNetworkId().toString() : "";
+        
         return chest.getOwnerId() + "|" +
                chest.getOwnerName() + "|" +
                chest.getWorldId() + "|" +
+               hologramId + "|" +
                positions;
     }
     

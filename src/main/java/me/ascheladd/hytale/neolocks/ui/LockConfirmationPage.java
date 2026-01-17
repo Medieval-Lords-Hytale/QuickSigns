@@ -7,11 +7,19 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.entity.entities.ProjectileComponent;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -30,6 +38,7 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     
     // Data class for handling button clicks
     public static class Data {
+        @Nonnull
         public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
             .append(new KeyedCodec<>("ButtonAction", Codec.STRING), 
                 (data, value) -> data.action = value, 
@@ -64,6 +73,9 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     private final int chestX;
     private final int chestY;
     private final int chestZ;
+    private final int signX;
+    private final int signY;
+    private final int signZ;
     private final ChestPosition[] chestPositions;
     
     public LockConfirmationPage(
@@ -75,6 +87,9 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         int chestX,
         int chestY,
         int chestZ,
+        int signX,
+        int signY,
+        int signZ,
         ChestPosition[] chestPositions
     ) {
         super(playerRef, CustomPageLifetime.CanDismiss, Data.CODEC);
@@ -85,6 +100,9 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         this.chestX = chestX;
         this.chestY = chestY;
         this.chestZ = chestZ;
+        this.signX = signX;
+        this.signY = signY;
+        this.signZ = signZ;
         this.chestPositions = chestPositions;
     }
     
@@ -101,7 +119,8 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         int chestY,
         int chestZ
     ) {
-        this(playerRef, storage, playerId, playerName, worldId, chestX, chestY, chestZ,
+        this(playerRef, storage, playerId, playerName, worldId, chestX, chestY, chestZ, 
+            chestX, chestY, chestZ,
             new ChestPosition[] { new ChestPosition(chestX, chestY, chestZ) });
     }
     
@@ -135,10 +154,10 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     public void handleDataEvent(
         @Nonnull Ref<EntityStore> playerEntity,
         @Nonnull Store<EntityStore> store,
-        Data data
+        @Nonnull Data data
     ) {
         if ("confirm".equals(data.getAction())) {
-            // Lock all parts of the chest (handles double chests)
+            // Lock all parts of the chest first (handles double chests)
             for (ChestPosition pos : chestPositions) {
                 LockedChest chest = new LockedChest(
                     playerId,
@@ -150,6 +169,73 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
                 );
                 storage.lockChest(chest);
             }
+            
+            // Create a text hologram in front of the sign (towards the chest)
+            var world = store.getExternalData().getWorld();
+            
+            world.execute(() -> {
+                // Create entity holder
+                Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
+                
+                // Create projectile component (invisible entity shell)
+                ProjectileComponent projectileComponent = new ProjectileComponent("Projectile");
+                holder.putComponent(ProjectileComponent.getComponentType(), projectileComponent);
+                
+                // Calculate direction from sign to chest, then reverse for front of sign
+                int deltaX = chestX - signX;
+                int deltaZ = chestZ - signZ;
+                
+                // Normalize and apply offset (0.3 blocks AWAY from chest, in front of sign)
+                // Negate the offset so it goes opposite direction (towards player, not chest)
+                double offsetX = deltaX != 0 ? -Math.signum(deltaX) * 0.3 : 0;
+                double offsetZ = deltaZ != 0 ? -Math.signum(deltaZ) * 0.3 : 0;
+                
+                // Position hologram in front of sign (opposite side from chest)
+                Transform hologramTransform = new Transform(
+                    signX + 0.5 + offsetX,
+                    signY,  // Already centered at sign position
+                    signZ + 0.5 + offsetZ,
+                    0.0f, 0.0f, 0.0f  // Rotation (yaw, pitch, roll) - Note: Nameplate always faces player
+                );
+                holder.putComponent(TransformComponent.getComponentType(), 
+                    new TransformComponent(hologramTransform.getPosition(), hologramTransform.getRotation()));
+                
+                // Ensure UUID component
+                holder.ensureComponent(UUIDComponent.getComponentType());
+                
+                // Initialize projectile
+                if (projectileComponent.getProjectile() == null) {
+                    projectileComponent.initialize();
+                    if (projectileComponent.getProjectile() == null) {
+                        return;
+                    }
+                }
+                
+                // Add network ID
+                long networkId = world.getEntityStore().getStore().getExternalData().takeNextNetworkId();
+                holder.addComponent(NetworkId.getComponentType(), new NetworkId((int) networkId));
+                
+                // Add nameplate with text
+                String hologramText = playerName + "'s chest";
+                holder.addComponent(Nameplate.getComponentType(), new Nameplate(hologramText));
+                
+                // Spawn the entity and capture reference
+                Ref<EntityStore> hologramRef = world.getEntityStore().getStore().addEntity(holder, AddReason.SPAWN);
+                
+                // Register the hologram for later deletion (TaleLib pattern)
+                if (hologramRef != null && hologramRef.isValid()) {
+                    me.ascheladd.hytale.neolocks.listener.BlockBreakListener.registerHologram(networkId, hologramRef);
+                }
+                
+                // NOW update the chest(s) with the hologram network ID (inside world thread)
+                for (ChestPosition pos : chestPositions) {
+                    LockedChest chest = storage.getLockedChest(worldId, pos.x, pos.y, pos.z);
+                    if (chest != null) {
+                        chest.setHologramNetworkId(networkId);
+                        storage.lockChest(chest); // Re-save with the hologram ID
+                    }
+                }
+            });
         }
         
         // Close the page (for both confirm and cancel)

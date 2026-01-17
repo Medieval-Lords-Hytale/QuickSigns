@@ -77,7 +77,7 @@ public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Dat
     public void handleDataEvent(
         @Nonnull Ref<EntityStore> playerEntity,
         @Nonnull Store<EntityStore> store,
-        Data data
+        @Nonnull Data data
     ) {
         // Close the page
         close();

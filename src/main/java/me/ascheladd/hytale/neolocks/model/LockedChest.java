@@ -15,6 +15,7 @@ public class LockedChest {
     private final String ownerName;
     private final String worldId;
     private final Set<BlockPosition> positions;
+    private Long hologramNetworkId; // Network ID of the hologram entity (nullable)
     
     /**
      * Creates a LockedChest with multiple block positions.
@@ -93,6 +94,18 @@ public class LockedChest {
      */
     public boolean isOwnedBy(UUID playerId) {
         return ownerId.equals(playerId);
+    }
+    
+    public Long getHologramNetworkId() {
+        return hologramNetworkId;
+    }
+    
+    public void setHologramNetworkId(Long networkId) {
+        this.hologramNetworkId = networkId;
+    }
+    
+    public boolean hasHologram() {
+        return hologramNetworkId != null;
     }
     
     /**

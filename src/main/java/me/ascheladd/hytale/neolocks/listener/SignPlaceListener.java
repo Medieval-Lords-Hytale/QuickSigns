@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import me.ascheladd.hytale.neolocks.model.LockedChest;
 import me.ascheladd.hytale.neolocks.storage.ChestLockStorage;
 import me.ascheladd.hytale.neolocks.ui.LockConfirmationPage;
 import me.ascheladd.hytale.neolocks.util.ChestUtil;
@@ -90,35 +89,19 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
         // Check if any part of the chest is already locked
         for (ChestPosition pos : chestPositions) {
             if (storage.isLocked(worldId, pos.x, pos.y, pos.z)) {
-                LockedChest existingLock = storage.getLockedChest(worldId, pos.x, pos.y, pos.z);
-                
-                // If owned by this player, allow unlocking
-                if (existingLock.isOwnedBy(playerRef.getUuid())) {
-                    // Unlock all parts of the chest
-                    for (ChestPosition unlockPos : chestPositions) {
-                        storage.unlockChest(worldId, unlockPos.x, unlockPos.y, unlockPos.z);
-                    }
-                    // Send unlock confirmation message
-                    player.sendMessage(Message.raw("Chest unlocked!").color("#00FF00"));
-                    ev.setCancelled(true);
-                    return;
-                }
-                
-                // Already locked by someone else
-                player.sendMessage(Message.raw("This chest is already locked by another player.").color("#FF0000"));
-                ev.setCancelled(true);
+                // Already locked by someone (possibly this player)
+                player.sendMessage(Message.raw("This chest is already locked.").color("#FF0000"));
                 return;
             }
         }
         
-        // Cancel the sign placement event
-        ev.setCancelled(true);
+        // Allow the sign to be placed (don't cancel the event)
+        // We'll create a hologram above it after confirmation
         
         // Use the first chest position as the primary position
         int chestX = chestPositions[0].x;
         int chestY = chestPositions[0].y;
         int chestZ = chestPositions[0].z;
-        System.out.println("Trying to lock a chest at " + chestX + "," + chestY + "," + chestZ);
         
         // Convert ChestPosition[] to LockConfirmationPage.ChestPosition[]
         LockConfirmationPage.ChestPosition[] uiChestPositions = 
@@ -141,6 +124,9 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
             chestX,
             chestY,
             chestZ,
+            signX,
+            signY,
+            signZ,
             uiChestPositions
         );
         
@@ -198,7 +184,6 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
         if (blockKey == null) {
             return false;
         }
-        System.out.println("Block key: " + blockKey + " " + blockKey.contains("Sign"));
         return blockKey.equals("Sign") || blockKey.contains("Sign");
     }
 }
