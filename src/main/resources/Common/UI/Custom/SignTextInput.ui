@@ -1,0 +1,108 @@
+$C = "Common.ui";
+
+Group {
+    LayoutMode: Center;
+
+    Group {
+        LayoutMode: Top;
+        Anchor: (Width: 500, Height: 380);
+        Padding: (Full: 30);
+        Background: (Color: #DD1A1A1A);
+
+        Label #Title {
+            Text: "Sign Text";
+            Style: (FontSize: 24, Alignment: Center);
+            Padding: (Bottom: 15);
+        }
+
+        Label #Description {
+            Text: "Enter up to 3 lines of text (16 characters each)";
+            Style: (FontSize: 14, Alignment: Center);
+            Padding: (Bottom: 15);
+        }
+
+        Group {
+            LayoutMode: Top;
+            Anchor: (Height: 200);
+            Padding: (Bottom: 15);
+
+            Group {
+                Anchor: (Height: 42);
+                LayoutMode: Left;
+                Padding: (Vertical: 2);
+
+                Label {
+                    Text: "Line 1:";
+                    Anchor: (Width: 60);
+                    Style: (FontSize: 14, TextColor: #b4c8c9, VerticalAlignment: Center);
+                }
+                $C.@TextField #Line1Input {
+                    FlexWeight: 1;
+                    Anchor: (Height: 36);
+                    PlaceholderText: "First line...";
+                }
+            }
+
+            Group {
+                Anchor: (Height: 42);
+                LayoutMode: Left;
+                Padding: (Vertical: 2);
+
+                Label {
+                    Text: "Line 2:";
+                    Anchor: (Width: 60);
+                    Style: (FontSize: 14, TextColor: #b4c8c9, VerticalAlignment: Center);
+                }
+                $C.@TextField #Line2Input {
+                    FlexWeight: 1;
+                    Anchor: (Height: 36);
+                    PlaceholderText: "Second line...";
+                }
+            }
+
+            Group {
+                Anchor: (Height: 42);
+                LayoutMode: Left;
+                Padding: (Vertical: 2);
+
+                Label {
+                    Text: "Line 3:";
+                    Anchor: (Width: 60);
+                    Style: (FontSize: 14, TextColor: #b4c8c9, VerticalAlignment: Center);
+                }
+                $C.@TextField #Line3Input {
+                    FlexWeight: 1;
+                    Anchor: (Height: 36);
+                    PlaceholderText: "Third line...";
+                }
+            }
+        }
+
+        Group {
+            LayoutMode: Left;
+            Anchor: (Height: 50);
+
+            Button #ConfirmButton {
+                Anchor: (Width: 210, Height: 45);
+                Padding: (Right: 5);
+                Background: (Color: #E62E7D32);
+
+                Label {
+                    Text: "Create Sign";
+                    Style: (FontSize: 18, Alignment: Center);
+                }
+            }
+
+            Button #CancelButton {
+                Anchor: (Width: 210, Height: 45);
+                Padding: (Left: 5);
+                Background: (Color: #E6C62828);
+
+                Label {
+                    Text: "Cancel";
+                    Style: (FontSize: 18, Alignment: Center);
+                }
+            }
+        }
+    }
+}

@@ -26,6 +26,7 @@ public class LockedChestPage extends InteractiveCustomUIPage<LockedChestPage.Dat
     
     // Data class for handling button clicks
     public static class Data {
+        @Nonnull
         public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
             .append(new KeyedCodec<>("CloseAction", Codec.STRING), 
                 (data, value) -> data.action = value, 

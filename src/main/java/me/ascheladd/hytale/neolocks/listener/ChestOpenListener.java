@@ -110,27 +110,27 @@ public class ChestOpenListener extends EntityEventSystem<EntityStore, UseBlockEv
         
         // If no part is locked, allow opening
         if (lockedChest == null) {
-            System.out.println("Allow 1");
+            me.ascheladd.hytale.neolocks.NeoLocks.debug("Allow 1");
             return;
         }
         
         // Check if player owns this chest
         if (lockedChest.isOwnedBy(playerRef.getUuid())) {
             // Owner can open their own chest
-            System.out.println("Allow 2");
+            me.ascheladd.hytale.neolocks.NeoLocks.debug("Allow 2");
             return;
         }
         
         // Check if player has bypass permission
         if (player.hasPermission(PERMISSION_BYPASS)) {
-            System.out.println("Allow 3");
+            me.ascheladd.hytale.neolocks.NeoLocks.debug("Allow 3");
             // Player can bypass locks
             return;
         }
         
         // Cancel the chest opening
         ev.setCancelled(true);
-        System.out.println("Locked 1");
+        me.ascheladd.hytale.neolocks.NeoLocks.debug("Locked 1");
         
         // Show locked chest UI
         LockedChestPage lockedPage = new LockedChestPage(

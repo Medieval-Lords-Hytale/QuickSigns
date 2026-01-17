@@ -7,19 +7,13 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.component.AddReason;
-import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.entity.entities.ProjectileComponent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -28,6 +22,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import me.ascheladd.hytale.neolocks.model.LockedChest;
 import me.ascheladd.hytale.neolocks.storage.ChestLockStorage;
+import me.ascheladd.hytale.neolocks.storage.SignHologramStorage;
+import me.ascheladd.hytale.neolocks.util.HologramUtil;
 
 /**
  * UI page shown when a player attempts to place a sign on a chest.
@@ -67,6 +63,7 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     }
     
     private final ChestLockStorage storage;
+    private final SignHologramStorage signHologramStorage;
     private final UUID playerId;
     private final String playerName;
     private final String worldId;
@@ -81,6 +78,7 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     public LockConfirmationPage(
         @Nonnull PlayerRef playerRef,
         ChestLockStorage storage,
+        SignHologramStorage signHologramStorage,
         UUID playerId,
         String playerName,
         String worldId,
@@ -94,6 +92,7 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
     ) {
         super(playerRef, CustomPageLifetime.CanDismiss, Data.CODEC);
         this.storage = storage;
+        this.signHologramStorage = signHologramStorage;
         this.playerId = playerId;
         this.playerName = playerName;
         this.worldId = worldId;
@@ -119,7 +118,7 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         int chestY,
         int chestZ
     ) {
-        this(playerRef, storage, playerId, playerName, worldId, chestX, chestY, chestZ, 
+        this(playerRef, storage, null, playerId, playerName, worldId, chestX, chestY, chestZ, 
             chestX, chestY, chestZ,
             new ChestPosition[] { new ChestPosition(chestX, chestY, chestZ) });
     }
@@ -144,8 +143,10 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         ui.set("#Description.Text", description);
         
         // Register button click events
-        events.addEventBinding(CustomUIEventBindingType.Activating, "#ConfirmButton", 
-            EventData.of("ButtonAction", "confirm"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#LockButton", 
+            EventData.of("ButtonAction", "lock"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#PlaceSignButton", 
+            EventData.of("ButtonAction", "placesign"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#CancelButton", 
             EventData.of("ButtonAction", "cancel"), false);
     }
@@ -156,7 +157,9 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
         @Nonnull Store<EntityStore> store,
         @Nonnull Data data
     ) {
-        if ("confirm".equals(data.getAction())) {
+        String action = data.getAction();
+        
+        if ("lock".equals(action)) {
             // Lock all parts of the chest first (handles double chests)
             for (ChestPosition pos : chestPositions) {
                 LockedChest chest = new LockedChest(
@@ -170,76 +173,64 @@ public class LockConfirmationPage extends InteractiveCustomUIPage<LockConfirmati
                 storage.lockChest(chest);
             }
             
-            // Create a text hologram in front of the sign (towards the chest)
+            // Create a text hologram in front of the sign
             var world = store.getExternalData().getWorld();
             
+            // Get player position for offset calculation
+            var transformComponent = store.getComponent(playerEntity, TransformComponent.getComponentType());
+            if (transformComponent == null) return;
+            var playerPos = transformComponent.getPosition();
+            
             world.execute(() -> {
-                // Create entity holder
-                Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
-                
-                // Create projectile component (invisible entity shell)
-                ProjectileComponent projectileComponent = new ProjectileComponent("Projectile");
-                holder.putComponent(ProjectileComponent.getComponentType(), projectileComponent);
-                
-                // Calculate direction from sign to chest, then reverse for front of sign
-                int deltaX = chestX - signX;
-                int deltaZ = chestZ - signZ;
-                
-                // Normalize and apply offset (0.3 blocks AWAY from chest, in front of sign)
-                // Negate the offset so it goes opposite direction (towards player, not chest)
-                double offsetX = deltaX != 0 ? -Math.signum(deltaX) * 0.3 : 0;
-                double offsetZ = deltaZ != 0 ? -Math.signum(deltaZ) * 0.3 : 0;
-                
-                // Position hologram in front of sign (opposite side from chest)
-                Transform hologramTransform = new Transform(
-                    signX + 0.5 + offsetX,
-                    signY,  // Already centered at sign position
-                    signZ + 0.5 + offsetZ,
-                    0.0f, 0.0f, 0.0f  // Rotation (yaw, pitch, roll) - Note: Nameplate always faces player
-                );
-                holder.putComponent(TransformComponent.getComponentType(), 
-                    new TransformComponent(hologramTransform.getPosition(), hologramTransform.getRotation()));
-                
-                // Ensure UUID component
-                holder.ensureComponent(UUIDComponent.getComponentType());
-                
-                // Initialize projectile
-                if (projectileComponent.getProjectile() == null) {
-                    projectileComponent.initialize();
-                    if (projectileComponent.getProjectile() == null) {
-                        return;
-                    }
-                }
-                
-                // Add network ID
-                long networkId = world.getEntityStore().getStore().getExternalData().takeNextNetworkId();
-                holder.addComponent(NetworkId.getComponentType(), new NetworkId((int) networkId));
-                
-                // Add nameplate with text
                 String hologramText = playerName + "'s chest";
-                holder.addComponent(Nameplate.getComponentType(), new Nameplate(hologramText));
+                HologramUtil.HologramResult result = HologramUtil.createHologram(
+                    world,
+                    signX,
+                    signY,
+                    signZ,
+                    playerPos.x,
+                    playerPos.z,
+                    hologramText
+                );
                 
-                // Spawn the entity and capture reference
-                Ref<EntityStore> hologramRef = world.getEntityStore().getStore().addEntity(holder, AddReason.SPAWN);
-                
-                // Register the hologram for later deletion (TaleLib pattern)
-                if (hologramRef != null && hologramRef.isValid()) {
-                    me.ascheladd.hytale.neolocks.listener.BlockBreakListener.registerHologram(networkId, hologramRef);
-                }
-                
-                // NOW update the chest(s) with the hologram network ID (inside world thread)
-                for (ChestPosition pos : chestPositions) {
-                    LockedChest chest = storage.getLockedChest(worldId, pos.x, pos.y, pos.z);
-                    if (chest != null) {
-                        chest.setHologramNetworkId(networkId);
-                        storage.lockChest(chest); // Re-save with the hologram ID
+                if (result != null) {
+                    me.ascheladd.hytale.neolocks.listener.BlockBreakListener.registerHologram(
+                        result.networkId, result.entityRef
+                    );
+                    
+                    // update the chest(s) with the hologram network ID
+                    for (ChestPosition pos : chestPositions) {
+                        LockedChest chest = storage.getLockedChest(worldId, pos.x, pos.y, pos.z);
+                        if (chest != null) {
+                            chest.setHologramNetworkId(result.networkId);
+                            storage.lockChest(chest); // Re-save with the hologram ID
+                        }
                     }
                 }
             });
+            
+            close();
+        } else if ("placesign".equals(action)) {
+            // Open sign text input page
+            var player = store.getComponent(playerEntity, Player.getComponentType());
+            var playerRefComponent = store.getComponent(playerEntity, PlayerRef.getComponentType());
+            if (player != null && playerRefComponent != null) {
+                SignTextInputPage signTextPage = new SignTextInputPage(
+                    playerRefComponent,
+                    playerId,
+                    playerName,
+                    worldId,
+                    signX,
+                    signY,
+                    signZ,
+                    signHologramStorage
+                );
+                player.getPageManager().openCustomPage(playerEntity, store, signTextPage);
+            }
+            // Don't close here - opening new page will handle it
+        } else if ("cancel".equals(action)) {
+            close();
         }
-        
-        // Close the page (for both confirm and cancel)
-        close();
     }
     
     @Override

@@ -3,7 +3,7 @@ Group {
 
     Group #MyPanel {
         LayoutMode: Top;
-        Anchor: (Width: 500, Height: 300);
+        Anchor: (Width: 500, Height: 350);
         Padding: (Full: 30);
         Background: (Color: #F22A2A2E);
 
@@ -20,28 +20,38 @@ Group {
         }
 
         Group {
-            LayoutMode: Left;
-            Anchor: (Height: 50);
+            LayoutMode: Top;
+            Anchor: (Height: 140);
             Padding: (Top: 10);
 
-            Button #ConfirmButton {
-                Anchor: (Width: 200, Height: 45);
-                Padding: (Left: 10, Right: 5);
+            Button #LockButton {
+                Anchor: (Width: 440, Height: 45);
+                Padding: (Bottom: 5);
                 Background: (Color: #E62E7D32);
                 
                 Label {
-                    Text: "[YES] Confirm Lock";
+                    Text: "Lock Chest";
+                    Style: (FontSize: 18, Alignment: Center);
+                }
+            }
+
+            Button #PlaceSignButton {
+                Anchor: (Width: 440, Height: 45);
+                Padding: (Bottom: 5);
+                Background: (Color: #E65A8AC4);
+                
+                Label {
+                    Text: "Place Sign (No Lock)";
                     Style: (FontSize: 18, Alignment: Center);
                 }
             }
 
             Button #CancelButton {
-                Anchor: (Width: 200, Height: 45);
-                Padding: (Left: 5, Right: 10);
+                Anchor: (Width: 440, Height: 45);
                 Background: (Color: #E6C62828);
                 
                 Label {
-                    Text: "[NO] Cancel";
+                    Text: "Cancel";
                     Style: (FontSize: 18, Alignment: Center);
                 }
             }

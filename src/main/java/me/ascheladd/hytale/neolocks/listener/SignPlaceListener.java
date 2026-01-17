@@ -17,22 +17,27 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import me.ascheladd.hytale.neolocks.storage.ChestLockStorage;
+import me.ascheladd.hytale.neolocks.storage.SignHologramStorage;
 import me.ascheladd.hytale.neolocks.ui.LockConfirmationPage;
+import me.ascheladd.hytale.neolocks.ui.SignTextInputPage;
 import me.ascheladd.hytale.neolocks.util.ChestUtil;
 import me.ascheladd.hytale.neolocks.util.ChestUtil.ChestPosition;
 
 /**
- * Handles sign placement on chests for locking/unlocking.
+ * Handles sign placement to show text input UI.
+ * If the sign is adjacent to an unlocked chest, offers the option to lock it first.
  */
 public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
     
     private static final String PERMISSION_LOCK = "neolocks.lock";
     
     private final ChestLockStorage storage;
+    private final SignHologramStorage signHologramStorage;
     
-    public SignPlaceListener(ChestLockStorage storage) {
+    public SignPlaceListener(ChestLockStorage storage, SignHologramStorage signHologramStorage) {
         super(PlaceBlockEvent.class);
         this.storage = storage;
+        this.signHologramStorage = signHologramStorage;
     }
     
     @Override
@@ -50,7 +55,7 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
     ) {
         // Check if placing a sign
         if (!isSign(ev.getItemInHand())) {
-            System.out.println("Not a sign");
+            me.ascheladd.hytale.neolocks.NeoLocks.debug("Not a sign");
             return;
         }
         
@@ -61,7 +66,7 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
         Player player = store.getComponent(entityRef, Player.getComponentType());
         PlayerRef playerRef = store.getComponent(entityRef, PlayerRef.getComponentType());
         if (player == null) {
-            System.out.println("No permissions");
+            me.ascheladd.hytale.neolocks.NeoLocks.debug("No permissions");
             return;
         }
         
@@ -77,63 +82,74 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
         
         String worldId = store.getExternalData().getWorld().getName();
         
-        // The targetBlock is where the sign will be placed, not the chest
-        // We need to check adjacent blocks to find the chest
+        // The targetBlock is where the sign will be placed
+        // Check adjacent blocks to find if there's a chest
         ChestPosition[] chestPositions = findAdjacentChest(entityRef, signX, signY, signZ);
         
-        if (chestPositions.length == 0) {
-            System.out.println("No adjacent chest found for sign placement");
-            return; // No chest adjacent to this sign
-        }
-        
         // Check if any part of the chest is already locked
-        for (ChestPosition pos : chestPositions) {
-            if (storage.isLocked(worldId, pos.x, pos.y, pos.z)) {
-                // Already locked by someone (possibly this player)
-                player.sendMessage(Message.raw("This chest is already locked.").color("#FF0000"));
+        if (chestPositions.length > 0) {
+            boolean alreadyLocked = false;
+            for (ChestPosition pos : chestPositions) {
+                if (storage.isLocked(worldId, pos.x, pos.y, pos.z)) {
+                    alreadyLocked = true;
+                    break;
+                }
+            }
+            
+            // If adjacent to unlocked chest, show lock confirmation page with 3 options
+            if (!alreadyLocked) {
+                // Convert to LockConfirmationPage.ChestPosition[]
+                LockConfirmationPage.ChestPosition[] uiChestPositions = 
+                    new LockConfirmationPage.ChestPosition[chestPositions.length];
+                for (int i = 0; i < chestPositions.length; i++) {
+                    uiChestPositions[i] = new LockConfirmationPage.ChestPosition(
+                        chestPositions[i].x,
+                        chestPositions[i].y,
+                        chestPositions[i].z
+                    );
+                }
+                
+                LockConfirmationPage lockPage = new LockConfirmationPage(
+                    playerRef,
+                    storage,
+                    signHologramStorage,
+                    playerRef.getUuid(),
+                    playerRef.getUsername(),
+                    worldId,
+                    chestPositions[0].x,
+                    chestPositions[0].y,
+                    chestPositions[0].z,
+                    signX,
+                    signY,
+                    signZ,
+                    uiChestPositions
+                );
+                
+                player.getPageManager().openCustomPage(
+                    entityRef,
+                    store,
+                    lockPage
+                );
                 return;
             }
         }
         
-        // Allow the sign to be placed (don't cancel the event)
-        // We'll create a hologram above it after confirmation
-        
-        // Use the first chest position as the primary position
-        int chestX = chestPositions[0].x;
-        int chestY = chestPositions[0].y;
-        int chestZ = chestPositions[0].z;
-        
-        // Convert ChestPosition[] to LockConfirmationPage.ChestPosition[]
-        LockConfirmationPage.ChestPosition[] uiChestPositions = 
-            new LockConfirmationPage.ChestPosition[chestPositions.length];
-        for (int i = 0; i < chestPositions.length; i++) {
-            uiChestPositions[i] = new LockConfirmationPage.ChestPosition(
-                chestPositions[i].x,
-                chestPositions[i].y,
-                chestPositions[i].z
-            );
-        }
-        
-        // Open the lock confirmation UI
-        LockConfirmationPage confirmPage = new LockConfirmationPage(
+        // No adjacent unlocked chest, open sign text input directly
+        SignTextInputPage signTextPage = new SignTextInputPage(
             playerRef,
-            storage,
             playerRef.getUuid(),
             playerRef.getUsername(),
             worldId,
-            chestX,
-            chestY,
-            chestZ,
             signX,
             signY,
             signZ,
-            uiChestPositions
+            signHologramStorage
         );
         
         player.getPageManager().openCustomPage(
             entityRef,
             store,
-            confirmPage
+            signTextPage
         );
     }
     
