@@ -28,6 +28,10 @@ public class SignPlaceListener extends EntityEventSystem<EntityStore, PlaceBlock
     
     private final SignHologramStorage signHologramStorage;
     
+    /**
+     * Creates a new sign place listener.
+     * @param signHologramStorage The sign hologram storage instance
+     */
     public SignPlaceListener(SignHologramStorage signHologramStorage) {
         super(PlaceBlockEvent.class);
         this.signHologramStorage = signHologramStorage;

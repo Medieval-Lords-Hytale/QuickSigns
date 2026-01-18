@@ -25,8 +25,17 @@ import me.ascheladd.hytale.quicksigns.util.SignUtil;
  */
 public class SignTextInputSupplier implements OpenCustomUIInteraction.CustomPageSupplier {
 
+    /**
+     * Codec for serializing/deserializing SignTextInputSupplier.
+     */
     public static final BuilderCodec<SignTextInputSupplier> CODEC = 
         BuilderCodec.builder(SignTextInputSupplier.class, SignTextInputSupplier::new).build();
+    
+    /**
+     * Creates a new SignTextInputSupplier.
+     */
+    public SignTextInputSupplier() {
+    }
 
     @Override
     public CustomUIPage tryCreate(

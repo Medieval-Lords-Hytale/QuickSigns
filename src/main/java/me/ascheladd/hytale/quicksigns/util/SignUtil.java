@@ -8,6 +8,13 @@ import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 public class SignUtil {
     
     /**
+     * Private constructor to prevent instantiation.
+     */
+    private SignUtil() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+    
+    /**
      * Category identifier for furniture signs in Hytale.
      */
     private static final String SIGN_CATEGORY = "Furniture.Signs";

@@ -22,7 +22,7 @@ public class SignHologramData {
     
     /**
      * Codec for serializing/deserializing sign hologram data.
-     * Uses MapCodec with ArrayCodec to handle Map<String, List<UUID>> storage.
+     * Uses MapCodec with ArrayCodec to handle {@code Map<String, List<UUID>>} storage.
      */
     public static final BuilderCodec<SignHologramData> CODEC = BuilderCodec.builder(
             SignHologramData.class, SignHologramData::new
@@ -65,18 +65,33 @@ public class SignHologramData {
     .add()
     .build();
     
+    /**
+     * Creates a new SignHologramData with an empty map.
+     */
     public SignHologramData() {
         this.signHolograms = new ConcurrentHashMap<>();
     }
     
+    /**
+     * Creates a new SignHologramData with existing data.
+     * @param signHolograms The existing sign hologram mappings
+     */
     public SignHologramData(Map<String, List<UUID>> signHolograms) {
         this.signHolograms = signHolograms;
     }
     
+    /**
+     * Gets the sign hologram mappings.
+     * @return The map of sign locations to hologram UUIDs
+     */
     public Map<String, List<UUID>> getSignHolograms() {
         return signHolograms;
     }
     
+    /**
+     * Sets the sign hologram mappings.
+     * @param signHolograms The new sign hologram mappings
+     */
     public void setSignHolograms(Map<String, List<UUID>> signHolograms) {
         this.signHolograms = signHolograms;
     }

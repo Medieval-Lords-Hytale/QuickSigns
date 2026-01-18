@@ -39,6 +39,11 @@ public class SignHologramStorage {
     // Map from sign location key "worldId:x:y:z" to list of hologram UUIDs
     private final Map<String, List<UUID>> signHolograms;
     
+    /**
+     * Creates a new sign hologram storage.
+     * @param dataFolder The data folder for storage files
+     * @param logger The logger instance
+     */
     public SignHologramStorage(Path dataFolder, HytaleLogger logger) {
         this.storageFile = dataFolder.resolve("sign_holograms.json");
         this.logger = logger;
@@ -71,6 +76,11 @@ public class SignHologramStorage {
     
     /**
      * Registers a sign hologram mapping.
+     * @param worldId The world ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @param entityUuid The hologram entity UUID
      */
     public void registerSignHologram(String worldId, int x, int y, int z, UUID entityUuid) {
         String locationKey = makeLocationKey(worldId, x, y, z);
@@ -81,6 +91,11 @@ public class SignHologramStorage {
     
     /**
      * Gets all hologram UUIDs for a sign location.
+     * @param worldId The world ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @return List of hologram UUIDs, or null if none exist
      */
     public List<UUID> getSignHolograms(String worldId, int x, int y, int z) {
         String locationKey = makeLocationKey(worldId, x, y, z);
@@ -90,6 +105,11 @@ public class SignHologramStorage {
     /**
      * Removes all hologram mappings for a sign location.
      * Returns the UUIDs that were removed.
+     * @param worldId The world ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @return List of removed hologram UUIDs, or null if none existed
      */
     public List<UUID> removeSignHolograms(String worldId, int x, int y, int z) {
         String locationKey = makeLocationKey(worldId, x, y, z);
@@ -103,6 +123,7 @@ public class SignHologramStorage {
     
     /**
      * Gets all sign hologram mappings.
+     * @return A copy of all sign hologram mappings
      */
     public Map<String, List<UUID>> getAllSignHolograms() {
         return new ConcurrentHashMap<>(signHolograms);
@@ -110,6 +131,11 @@ public class SignHologramStorage {
     
     /**
      * Checks if there is a tracked sign at the specified location.
+     * @param worldId The world ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @return true if a sign exists at this location, false otherwise
      */
     public boolean hasSignAt(String worldId, int x, int y, int z) {
         String key = makeLocationKey(worldId, x, y, z);

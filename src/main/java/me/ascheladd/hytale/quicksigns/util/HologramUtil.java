@@ -23,6 +23,13 @@ import me.ascheladd.hytale.quicksigns.QuickSigns;
 public class HologramUtil {
     
     /**
+     * Private constructor to prevent instantiation.
+     */
+    private HologramUtil() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+    
+    /**
      * Creates a sign text hologram positioned in front of the sign.
      * Calculates offset based on the player's cardinal direction from the sign.
      * This method should be called from within world.execute().
@@ -117,10 +124,27 @@ public class HologramUtil {
      * Result class containing hologram creation information.
      */
     public static class HologramResult {
+        /**
+         * The network ID of the hologram entity.
+         */
         public final long networkId;
+        
+        /**
+         * The entity reference for the hologram.
+         */
         public final Ref<EntityStore> entityRef;
+        
+        /**
+         * The UUID of the hologram entity.
+         */
         public final UUID entityUuid;
         
+        /**
+         * Creates a new hologram result.
+         * @param networkId The network ID
+         * @param entityRef The entity reference
+         * @param entityUuid The entity UUID
+         */
         public HologramResult(long networkId, Ref<EntityStore> entityRef, UUID entityUuid) {
             this.networkId = networkId;
             this.entityRef = entityRef;

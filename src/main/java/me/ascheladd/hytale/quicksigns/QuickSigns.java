@@ -27,6 +27,10 @@ public final class QuickSigns extends JavaPlugin {
     private final Config<QuickSignsConfig> config;
     private SignHologramStorage signHologramStorage;
     
+    /**
+     * Constructs the QuickSigns plugin.
+     * @param init The plugin initialization context
+     */
     public QuickSigns(@Nonnull JavaPluginInit init) {
         super(init);
         instance = this;
@@ -79,6 +83,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Gets the plugin instance.
+     * @return The QuickSigns plugin instance
      */
     public static QuickSigns getInstance() {
         return instance;
@@ -86,6 +91,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Gets the sign hologram storage instance.
+     * @return The sign hologram storage
      */
     public SignHologramStorage getSignHologramStorage() {
         return signHologramStorage;
@@ -93,6 +99,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Gets the configuration instance.
+     * @return The plugin configuration
      */
     public Config<QuickSignsConfig> getConfig() {
         return config;
@@ -100,6 +107,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Enable or disable debug mode.
+     * @param enabled true to enable debug mode, false to disable
      */
     public static void setDebugMode(boolean enabled) {
         debugMode = enabled;
@@ -108,6 +116,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Check if debug mode is enabled.
+     * @return true if debug mode is enabled, false otherwise
      */
     public static boolean isDebugMode() {
         return debugMode;
@@ -115,6 +124,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Log a debug message if debug mode is enabled.
+     * @param message The debug message to log
      */
     public static void debug(String message) {
         if (debugMode) {
@@ -124,6 +134,7 @@ public final class QuickSigns extends JavaPlugin {
     
     /**
      * Gets the logger for easier access throughout the plugin.
+     * @return The Hytale logger instance
      */
     public static HytaleLogger logger() {
         return getInstance().getLogger();

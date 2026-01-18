@@ -29,6 +29,10 @@ public class BlockBreakListener extends EntityEventSystem<EntityStore, BreakBloc
     
     private final SignHologramStorage signHologramStorage;
     
+    /**
+     * Creates a new block break listener.
+     * @param signHologramStorage The sign hologram storage instance
+     */
     public BlockBreakListener(SignHologramStorage signHologramStorage) {
         super(BreakBlockEvent.class);
         this.signHologramStorage = signHologramStorage;
